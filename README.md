@@ -2,6 +2,10 @@
 
 Clon del clásico arcade **Asteroids** implementado en canvas HTML5 puro, sin dependencias ni bundler.
 
+## Demo:
+
+[Asteroids demo](https://github.com/Klerith/claude-asteroids)
+
 ## Descripción
 
 Nave espacial en un campo de asteroides con envolvimiento de bordes (el espacio es toroidal). Destruye asteroides para sumar puntos: los grandes se parten en medianos, los medianos en pequeños. Incluye power-ups especiales y tipos de asteroides únicos como la estrella fugaz.
@@ -24,16 +28,16 @@ Luego visita `http://localhost:3000`.
 
 ## Controles
 
-| Tecla   | Acción     |
-|---------|------------|
-| `←` `→` | Rotar nave |
-| `↑`     | Propulsar  |
-| `Espacio` | Disparar |
+| Tecla     | Acción     |
+| --------- | ---------- |
+| `←` `→`   | Rotar nave |
+| `↑`       | Propulsar  |
+| `Espacio` | Disparar   |
 
 ## Puntuación
 
 | Asteroide | Puntos |
-|-----------|--------|
+| --------- | ------ |
 | Grande    | 20     |
 | Mediano   | 50     |
 | Pequeño   | 100    |

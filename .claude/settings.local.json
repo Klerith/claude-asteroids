@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(git checkout:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git checkout -b 02-new-power-ups)",
+      "Bash(gh auth status)",
+      "Bash(gh repo create claude-asteroids --public --description \"Juego de Asteroides 2D en canvas HTML5, desarrollado con Claude Code\" --source=. --remote=origin --push)",
+      "Bash(gh api repos/Klerith/claude-asteroids/pages)",
+      "Bash(git push origin main)",
+      "Bash(gh api repos/Klerith/claude-asteroids/pages --method POST --field source='{\"\"branch\"\":\"\"main\"\",\"\"path\"\":\"\"/\"\"}')"
     ]
-  }
+  },
+  "spinnerTipsEnabled": true,
+  "prefersReducedMotion": true
 }

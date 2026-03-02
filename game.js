@@ -302,9 +302,11 @@ class PowerUp {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth   = 1.5;
+    ctx.strokeStyle = '#ffe600';
+    ctx.lineWidth   = 2.5;
     ctx.lineJoin    = 'round';
+    ctx.shadowColor = '#ffe600';
+    ctx.shadowBlur  = 8;
 
     ctx.beginPath();
     for (let i = 0; i < sides; i++) {
@@ -316,7 +318,8 @@ class PowerUp {
     ctx.closePath();
     ctx.stroke();
 
-    ctx.fillStyle    = '#fff';
+    ctx.shadowBlur  = 0;
+    ctx.fillStyle    = '#ffe600';
     ctx.font         = 'bold 9px monospace';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';

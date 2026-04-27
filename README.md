@@ -36,16 +36,17 @@ Luego visita `http://localhost:3000`.
 
 ## Puntuación
 
-| Asteroide | Puntos |
-| --------- | ------ |
-| Grande    | 20     |
-| Mediano   | 50     |
-| Pequeño   | 100    |
+| Objeto         | Puntos |
+| -------------- | ------ |
+| Grande         | 20     |
+| Mediano        | 50     |
+| Pequeño        | 100    |
+| Estrella fugaz | 500    |
 
 ## Características
 
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Power-ups con efectos especiales
-- Estrella fugaz: asteroide especial con estela azul y escudo verde
 - Partículas de explosión al destruir asteroides
+- **Estrella fugaz**: asteroide especial de color azul brillante que atraviesa la pantalla en línea recta a alta velocidad, dejando una estela azul que se desvanece. Aparece una vez por nivel (entre 8 y 14 segundos desde el inicio). Vale 500 puntos al ser destruida y no se parte en fragmentos. Si el jugador la toca sin escudo, pierde una vida.

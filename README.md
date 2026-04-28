@@ -46,6 +46,4 @@ Luego visita `http://localhost:3000`.
 
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
-- Power-ups con efectos especiales
-- Estrella fugaz: asteroide especial con estela azul y escudo verde
 - Partículas de explosión al destruir asteroides

@@ -62,6 +62,21 @@ const RADII  = [0, 16, 30, 50];   // por tamaño 1, 2, 3
 const SPEEDS = [0, 85, 55, 32];   // velocidad base por tamaño
 const POINTS = [0, 100, 50, 20];  // puntos por tamaño
 
+const SHIELD_DURATION    = 5;     // segundos
+const SHIELD_DROP_CHANCE = 0.15;  // probabilidad de soltar escudo al destruir asteroide
+const PICKUP_TTL         = 10;    // segundos que el power-up flota antes de desaparecer
+
+const TRIPLE_DURATION    = 10;    // segundos
+const TRIPLE_DROP_CHANCE = 0.10;  // probabilidad de soltar disparo triple
+const TRIPLE_SPREAD      = 0.26;  // rad entre balas del abanico (~15°)
+
+const SLOW_DURATION      = 6;     // segundos
+const SLOW_DROP_CHANCE   = 0.08;  // probabilidad de soltar slow motion
+const SLOW_FACTOR        = 0.5;   // multiplicador de velocidad de los asteroides
+
+const NOVA_DROP_CHANCE   = 0.03;  // item escaso: un solo uso, se activa con B
+const NOVA_FX_TIME       = 0.6;   // segundos de la onda expansiva
+
 class Asteroid {
   constructor(x, y, size = 3) {
     this.x    = x;
@@ -132,13 +147,19 @@ class Ship {
     this.thrusting     = false;
     this.invincible    = 3;
     this.shootCooldown = 0;
-    this.dead          = false;
+    this.shieldTimer   = 0;
+    this.tripleTimer   = 0;
+    this.slowTimer     = 0;
+    this.dead         = false;
   }
 
   update(dt) {
     if (this.dead) return;
     if (this.invincible    > 0) this.invincible    -= dt;
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
+    if (this.shieldTimer   > 0) this.shieldTimer   -= dt;
+    if (this.tripleTimer   > 0) this.tripleTimer   -= dt;
+    if (this.slowTimer     > 0) this.slowTimer     -= dt;
 
     const ROT   = 3.5;   // rad/s
     const THRUST = 260;  // px/s²
@@ -165,11 +186,32 @@ class Ship {
     const NOSE = 21;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
+    if (this.tripleTimer > 0) {
+      return [-TRIPLE_SPREAD, 0, TRIPLE_SPREAD].map(d => new Bullet(ox, oy, this.angle + d));
+    }
     return [new Bullet(ox, oy, this.angle)];
+  }
+
+  drawShield() {
+    if (this.shieldTimer <= 0) return;
+    if (this.shieldTimer < 1.5 && Math.floor(this.shieldTimer * 8) % 2 === 0) return;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.strokeStyle = 'rgba(80, 220, 255, 0.9)';
+    ctx.fillStyle   = 'rgba(80, 220, 255, 0.12)';
+    ctx.lineWidth   = 2;
+    ctx.shadowColor = '#50dcff';
+    ctx.shadowBlur  = 10;
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   draw() {
     if (this.dead) return;
+    this.drawShield();
     // Parpadeo durante invencibilidad de reaparición
     if (this.invincible > 0 && Math.floor(this.invincible * 8) % 2 === 0) return;
 
@@ -235,9 +277,67 @@ class Particle {
   }
 }
 
+// ── Power-ups: escudo / disparo triple ────────────────────────────────────────
+const PICKUP_LOOK = {
+  shield: { color: '#50dcff', label: 'S' },
+  triple: { color: '#ffd23c', label: 'T' },
+  slow:   { color: '#b47cff', label: 'L' },
+  nova:   { color: '#ff5a5a', label: 'N' },
+};
+
+class Pickup {
+  constructor(x, y, type = 'shield') {
+    this.x = x;
+    this.y = y;
+    this.type  = type;
+    const look = PICKUP_LOOK[type];
+    this.color = look.color;
+    this.label = look.label;
+    const angle = rand(0, Math.PI * 2);
+    const speed = rand(10, 25);
+    this.vx     = Math.cos(angle) * speed;
+    this.vy     = Math.sin(angle) * speed;
+    this.radius = 10;
+    this.ttl    = PICKUP_TTL;
+    this.dead   = false;
+  }
+
+  update(dt) {
+    this.x = wrap(this.x + this.vx * dt, W);
+    this.y = wrap(this.y + this.vy * dt, H);
+    this.ttl -= dt;
+    if (this.ttl <= 0) this.dead = true;
+  }
+
+  draw() {
+    if (this.ttl < 3 && Math.floor(this.ttl * 6) % 2 === 0) return;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.strokeStyle = this.color;
+    ctx.fillStyle   = this.color;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const px = Math.cos(a) * this.radius;
+      const py = Math.sin(a) * this.radius;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.label, 0, 1);
+    ctx.restore();
+  }
+}
+
 // ── Estado del juego ──────────────────────────────────────────────────────────
-let ship, bullets, asteroids, particles;
+let ship, bullets, asteroids, particles, pickups;
 let score, lives, level;
+let novaReady = false;   // bomba nova guardada (persiste entre vidas y niveles)
+let novaFx = null;       // { x, y, t } onda expansiva activa
 let state;      // 'playing' | 'dead' | 'gameover'
 let deadTimer;
 
@@ -258,6 +358,9 @@ function initGame() {
   bullets   = [];
   asteroids = [];
   particles = [];
+  pickups   = [];
+  novaReady = false;
+  novaFx    = null;
   score  = 0;
   lives  = 3;
   level  = 1;
@@ -269,12 +372,23 @@ function nextLevel() {
   level++;
   bullets   = [];
   particles = [];
+  pickups   = [];
   ship.reset();
   spawnAsteroids(3 + level);
 }
 
 function explode(x, y, count = 8) {
   for (let i = 0; i < count; i++) particles.push(new Particle(x, y));
+}
+
+function detonateNova() {
+  novaReady = false;
+  novaFx = { x: ship.x, y: ship.y, t: NOVA_FX_TIME };
+  for (const a of asteroids) {
+    score += POINTS[a.size];
+    explode(a.x, a.y, a.size * 5);
+  }
+  asteroids = [];
 }
 
 function killShip() {
@@ -303,6 +417,8 @@ function update(dt) {
     particles.forEach(p => p.update(dt));
     particles = particles.filter(p => !p.dead);
     asteroids.forEach(a => a.update(dt));
+    pickups.forEach(p => p.update(dt));
+    pickups = pickups.filter(p => !p.dead);
     if (deadTimer <= 0) { state = 'playing'; ship.reset(); }
     return;
   }
@@ -311,13 +427,17 @@ function update(dt) {
   if (pressed('Space')) {
     bullets.push(...ship.tryShoot());
   }
+  if (pressed('KeyB') && novaReady) detonateNova();
+  if (novaFx && (novaFx.t -= dt) <= 0) novaFx = null;
 
   ship.update(dt);
   bullets.forEach(b => b.update(dt));
-  asteroids.forEach(a => a.update(dt));
+  const astDt = ship.slowTimer > 0 ? dt * SLOW_FACTOR : dt;
+  asteroids.forEach(a => a.update(astDt));
   particles.forEach(p => p.update(dt));
+  pickups.forEach(p => p.update(dt));
 
-  bullets   = bullets.filter(b => !b.dead);
+  bullets  = bullets.filter(b => !b.dead);
   particles = particles.filter(p => !p.dead);
 
   // Bala vs asteroide
@@ -330,17 +450,44 @@ function update(dt) {
         score += POINTS[a.size];
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
+        const roll = Math.random();
+        if (roll < SHIELD_DROP_CHANCE) pickups.push(new Pickup(a.x, a.y, 'shield'));
+        else if (roll < SHIELD_DROP_CHANCE + TRIPLE_DROP_CHANCE) pickups.push(new Pickup(a.x, a.y, 'triple'));
+        else if (roll < SHIELD_DROP_CHANCE + TRIPLE_DROP_CHANCE + SLOW_DROP_CHANCE) pickups.push(new Pickup(a.x, a.y, 'slow'));
+        else if (roll < SHIELD_DROP_CHANCE + TRIPLE_DROP_CHANCE + SLOW_DROP_CHANCE + NOVA_DROP_CHANCE) pickups.push(new Pickup(a.x, a.y, 'nova'));
       }
     }
   }
   asteroids = asteroids.filter(a => !a.dead).concat(newAsteroids);
   bullets   = bullets.filter(b => !b.dead);
 
-  // Nave vs asteroide
+  // Nave vs power-up (recoger)
+  for (const p of pickups) {
+    if (!p.dead && dist(ship, p) < ship.radius + p.radius) {
+      p.dead = true;
+      if (p.type === 'triple') ship.tripleTimer = TRIPLE_DURATION;
+      else if (p.type === 'slow') ship.slowTimer = SLOW_DURATION;
+      else if (p.type === 'nova') novaReady = true;
+      else ship.shieldTimer = SHIELD_DURATION;
+    }
+  }
+  pickups = pickups.filter(p => !p.dead);
+
+  // Nave vs asteroide (el escudo absorbe un impacto)
   if (ship.invincible <= 0) {
     for (const a of asteroids) {
       if (dist(ship, a) < ship.radius + a.radius * 0.82) {
-        killShip();
+        if (ship.shieldTimer > 0) {
+          ship.shieldTimer = 0;
+          ship.invincible  = 1;
+          a.dead = true;
+          score += POINTS[a.size];
+          explode(a.x, a.y, a.size * 5);
+          asteroids.push(...a.split());
+          asteroids = asteroids.filter(x => !x.dead);
+        } else {
+          killShip();
+        }
         break;
       }
     }
@@ -381,6 +528,21 @@ function drawHUD() {
   for (let i = 0; i < lives; i++)
     drawLifeIcon(W - 16 - i * 22, 18);
 
+  const active = [
+    ['ESCUDO', ship.shieldTimer, PICKUP_LOOK.shield.color],
+    ['TRIPLE', ship.tripleTimer, PICKUP_LOOK.triple.color],
+    ['SLOW',   ship.slowTimer,   PICKUP_LOOK.slow.color],
+  ].filter(([, t]) => t > 0);
+  if (novaReady) {
+    ctx.fillStyle = PICKUP_LOOK.nova.color;
+    ctx.textAlign = 'right';
+    ctx.fillText('NOVA LISTA [B]', W - 14, H - 14);
+  }
+  ctx.textAlign = 'left';
+  active.forEach(([name, t, color], i) => {
+    ctx.fillStyle = color;
+    ctx.fillText(`${name} ${t.toFixed(1)}s`, 14, H - 14 - i * 20);
+  });
 }
 
 function drawOverlay(title, sub) {
@@ -400,7 +562,21 @@ function draw() {
   particles.forEach(p => p.draw());
   asteroids.forEach(a => a.draw());
   bullets.forEach(b => b.draw());
+  pickups.forEach(p => p.draw());
   ship.draw();
+
+  if (novaFx) {
+    const k = 1 - novaFx.t / NOVA_FX_TIME;
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 90, 90, ${(1 - k).toFixed(2)})`;
+    ctx.lineWidth   = 4;
+    ctx.shadowColor = '#ff5a5a';
+    ctx.shadowBlur  = 15;
+    ctx.beginPath();
+    ctx.arc(novaFx.x, novaFx.y, k * Math.hypot(W, H), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   drawHUD();
 

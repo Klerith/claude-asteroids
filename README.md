@@ -2,6 +2,11 @@
 
 Clon del clásico arcade **Asteroids** implementado en canvas HTML5 puro, sin dependencias ni bundler.
 
+## Instrucciones
+- Usa las teclas de dirección para mover la nave.
+- Presiona la barra espaciadora para disparar.
+- Destruye los asteroides para ganar puntos.
+
 ## Demo:
 
 [Asteroids demo](https://klerith.github.io/claude-asteroids/)

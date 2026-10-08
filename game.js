@@ -50,10 +50,14 @@ class Bullet {
   }
 
   draw() {
-    ctx.fillStyle = '#fff';
+    ctx.save();
+    ctx.fillStyle   = '#00e5ff';
+    ctx.shadowColor = '#00e5ff';
+    ctx.shadowBlur  = 8;
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.arc(this.x, this.y, this.radius + 0.5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
   }
 }
 

@@ -169,7 +169,9 @@ class Ship {
     const NOSE = 21;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
-    return [new Bullet(ox, oy, this.angle)];
+    // Triple shot: una bala al frente y dos en abanico a los lados
+    const SPREAD = 0.2;  // rad (~11°)
+    return [-SPREAD, 0, SPREAD].map(offset => new Bullet(ox, oy, this.angle + offset));
   }
 
   draw() {

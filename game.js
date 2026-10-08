@@ -241,6 +241,30 @@ let score, lives, level;
 let state;      // 'playing' | 'dead' | 'gameover'
 let deadTimer;
 
+// ── Récord (persistente en localStorage) ──────────────────────────────────────
+const HIGH_SCORE_KEY = 'asteroids-high-score';
+let highScore    = loadHighScore();
+let newHighScore = false;
+
+function loadHighScore() {
+  try {
+    return parseInt(localStorage.getItem(HIGH_SCORE_KEY), 10) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveHighScore() {
+  if (score <= highScore) return;
+  highScore    = score;
+  newHighScore = true;
+  try {
+    localStorage.setItem(HIGH_SCORE_KEY, String(highScore));
+  } catch {
+    // Sin acceso a localStorage: el récord solo dura esta sesión
+  }
+}
+
 function spawnAsteroids(count) {
   const SAFE_DIST = 130;
   for (let i = 0; i < count; i++) {
@@ -262,6 +286,7 @@ function initGame() {
   lives  = 3;
   level  = 1;
   state  = 'playing';
+  newHighScore = false;
   spawnAsteroids(4);
 }
 
@@ -283,6 +308,7 @@ function killShip() {
   lives--;
   if (lives <= 0) {
     state = 'gameover';
+    saveHighScore();
   } else {
     state     = 'dead';
     deadTimer = 2;
@@ -375,6 +401,12 @@ function drawHUD() {
   ctx.textAlign = 'left';
   ctx.fillText(`SCORE  ${score}`, 14, 26);
 
+  ctx.font      = '12px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText(`RÉCORD ${Math.max(score, highScore)}`, 14, 44);
+  ctx.font      = '15px monospace';
+  ctx.fillStyle = '#fff';
+
   ctx.textAlign = 'center';
   ctx.fillText(`NIVEL ${level}`, W / 2, 26);
 
@@ -404,8 +436,14 @@ function draw() {
 
   drawHUD();
 
-  if (state === 'gameover')
+  if (state === 'gameover') {
     drawOverlay('GAME OVER', `PUNTAJE: ${score}   —   ESPACIO PARA REINICIAR`);
+    if (newHighScore) {
+      ctx.font      = 'bold 20px monospace';
+      ctx.fillStyle = '#ffd54a';
+      ctx.fillText('¡NUEVO RÉCORD!', W / 2, H / 2 + 60);
+    }
+  }
 }
 
 // ── Loop principal ────────────────────────────────────────────────────────────

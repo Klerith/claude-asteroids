@@ -1,6 +1,10 @@
 # Asteroids
 
 Clon del clásico arcade **Asteroids** implementado en canvas HTML5 puro, sin dependencias ni bundler.
+#Instucciones de uso y demo en línea incluidas.
+
+- a
+- b
 
 ## Demo:
 

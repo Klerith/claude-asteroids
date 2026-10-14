@@ -4,6 +4,8 @@ Clon del clásico arcade **Asteroids** implementado en canvas HTML5 puro, sin de
 
 ## Demo:
 
+LOREM LOREM
+
 [Asteroids demo](https://klerith.github.io/claude-asteroids/)
 
 ##Instrucciones

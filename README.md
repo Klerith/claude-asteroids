@@ -2,6 +2,10 @@
 
 Clon del clásico arcade **Asteroids** implementado en canvas HTML5 puro, sin dependencias ni bundler.
 
+# Instrucciones
+- La nave se controla con las flechas del teclado y dispara con la barra espaciadora.
+- Los asteroides se mueven en línea recta y rebotan en los bordes de la pantalla (el espacio es toroidal).
+
 ## Demo:
 
 [Asteroids demo](https://klerith.github.io/claude-asteroids/)

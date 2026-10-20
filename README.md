@@ -1,4 +1,4 @@
-# Asteroids de Fernando 
+# Asteroids de Fernando Herrera
 
 Clon del clásico arcade **Asteroids** implementado en canvas HTML5 puro, sin dependencias ni bundler.
 

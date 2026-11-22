@@ -30,3 +30,4 @@ The game is deployed to GitHub Pages (demo link in README.md).
 ## Notes
 
 - README.md still mentions power-ups and a "shooting star" asteroid, but they were removed (commit 13e713f). The code is the source of truth.
+

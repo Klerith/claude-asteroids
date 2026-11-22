@@ -247,7 +247,7 @@ class Particle {
 }
 
 // ── Power-up: Disparo Triple ──────────────────────────────────────────────────
-const POWERUP_DROP_CHANCE = 0.08;   // probabilidad por asteroide destruido
+const POWERUP_DROP_CHANCE = 0.1;  // probabilidad por asteroide destruido
 const POWERUP_TTL         = 8;      // segundos antes de desaparecer si no se recoge
 
 class PowerUp {

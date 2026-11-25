@@ -58,10 +58,11 @@ class Bullet {
 }
 
 // ── Asteroid ──────────────────────────────────────────────────────────────────
-const RADII  = [0, 16, 30, 50];   // por tamaño 1, 2, 3
-const SPEEDS = [0, 85, 55, 32];   // velocidad base por tamaño
-const POINTS = [0, 100, 50, 20];  // puntos por tamaño
-const COLORS = [null, '#ffdd00', '#3399ff', '#ff3333']; // color por tamaño: 1 amarillo, 2 azul, 3 rojo
+// Tablas indexadas por tamaño/nivel de asteroide (3 grande → 1 pequeño); índice 0 sin uso
+const RADII  = [0,    16,        30,        50];         // radio
+const SPEEDS = [0,    85,        55,        32];         // velocidad base
+const POINTS = [0,    100,       50,        20];         // puntos al destruirlo
+const COLORS = [null, '#ffdd00', '#3399ff', '#ff3333'];  // color: 1 amarillo, 2 azul, 3 rojo
 
 class Asteroid {
   constructor(x, y, size = 3) {

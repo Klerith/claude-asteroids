@@ -30,10 +30,12 @@ const rand  = (min, max) => min + Math.random() * (max - min);
 const randInt = (min, max) => Math.floor(rand(min, max + 1));
 
 // ── Bullet ────────────────────────────────────────────────────────────────────
+// Bala; el color permite distinguir las disparadas con el power-up activo
 class Bullet {
-  constructor(x, y, angle) {
+  constructor(x, y, angle, color = '#fff') {
     this.x = x;
     this.y = y;
+    this.color = color;
     const SPEED = 520;
     this.vx = Math.cos(angle) * SPEED;
     this.vy = Math.sin(angle) * SPEED;
@@ -50,7 +52,7 @@ class Bullet {
   }
 
   draw() {
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fill();
@@ -58,9 +60,11 @@ class Bullet {
 }
 
 // ── Asteroid ──────────────────────────────────────────────────────────────────
-const RADII  = [0, 16, 30, 50];   // por tamaño 1, 2, 3
-const SPEEDS = [0, 85, 55, 32];   // velocidad base por tamaño
-const POINTS = [0, 100, 50, 20];  // puntos por tamaño
+// Tablas indexadas por tamaño/nivel de asteroide (3 grande → 1 pequeño); índice 0 sin uso
+const RADII  = [0,    16,        30,        50];         // radio
+const SPEEDS = [0,    85,        55,        32];         // velocidad base
+const POINTS = [0,    100,       50,        20];         // puntos al destruirlo
+const COLORS = [null, '#ffdd00', '#3399ff', '#ff3333'];  // color: 1 amarillo, 2 azul, 3 rojo
 
 class Asteroid {
   constructor(x, y, size = 3) {
@@ -105,7 +109,7 @@ class Asteroid {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = COLORS[this.size];
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
     ctx.beginPath();
@@ -118,9 +122,62 @@ class Asteroid {
   }
 }
 
+// ── Power-up (disparo triple) ─────────────────────────────────────────────────
+const POWERUP_CHANCE = 0.2;           // probabilidad de soltar power-up al destruir asteroide
+const POWER_DURATION = 5;             // segundos de disparo triple
+const POWERUP_TTL    = 8;             // segundos que el power-up permanece en pantalla
+const TRIPLE_SPREAD  = Math.PI / 4;   // ángulo de las balas diagonales (45°)
+const POWER_COLOR    = '#00ffaa';     // color del power-up y de las balas potenciadas
+
+// Rombo giratorio que deriva lentamente; la nave lo recoge al tocarlo
+class PowerUp {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.radius = 6;   // ~1/3 del largo de la nave
+    const angle = rand(0, Math.PI * 2);
+    const speed = rand(10, 25);
+    this.vx  = Math.cos(angle) * speed;
+    this.vy  = Math.sin(angle) * speed;
+    this.rot = 0;
+    this.ttl = POWERUP_TTL;
+    this.dead = false;
+  }
+
+  update(dt) {
+    this.x = wrap(this.x + this.vx * dt, W);
+    this.y = wrap(this.y + this.vy * dt, H);
+    this.rot += 2 * dt;
+    this.ttl -= dt;
+    if (this.ttl <= 0) this.dead = true;
+  }
+
+  draw() {
+    // Parpadeo en los últimos 2 s antes de desaparecer
+    if (this.ttl < 2 && Math.floor(this.ttl * 8) % 2 === 0) return;
+    const r = this.radius;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+    ctx.strokeStyle = POWER_COLOR;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.lineTo(r, 0);
+    ctx.lineTo(0, r);
+    ctx.lineTo(-r, 0);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 // ── Ship ──────────────────────────────────────────────────────────────────────
 class Ship {
-  constructor() { this.reset(); }
+  constructor() {
+    this.powerTimer = 0;   // tiempo restante de disparo triple (no se reinicia entre niveles)
+    this.reset();
+  }
 
   reset() {
     this.x      = W / 2;
@@ -139,6 +196,7 @@ class Ship {
     if (this.dead) return;
     if (this.invincible    > 0) this.invincible    -= dt;
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
+    if (this.powerTimer    > 0) this.powerTimer    -= dt;
 
     const ROT   = 3.5;   // rad/s
     const THRUST = 260;  // px/s²
@@ -159,12 +217,20 @@ class Ship {
     this.y = wrap(this.y + this.vy * dt, H);
   }
 
+  // Dispara 1 bala blanca, o 3 de color (recta + 2 diagonales) si el power-up está activo
   tryShoot() {
     if (this.shootCooldown > 0 || this.dead) return [];
     this.shootCooldown = 0.2;
     const NOSE = 21;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
+    if (this.powerTimer > 0) {
+      return [
+        new Bullet(ox, oy, this.angle, POWER_COLOR),
+        new Bullet(ox, oy, this.angle - TRIPLE_SPREAD, POWER_COLOR),
+        new Bullet(ox, oy, this.angle + TRIPLE_SPREAD, POWER_COLOR),
+      ];
+    }
     return [new Bullet(ox, oy, this.angle)];
   }
 
@@ -236,7 +302,7 @@ class Particle {
 }
 
 // ── Estado del juego ──────────────────────────────────────────────────────────
-let ship, bullets, asteroids, particles;
+let ship, bullets, asteroids, particles, powerUps;
 let score, lives, level;
 let state;      // 'playing' | 'dead' | 'gameover'
 let deadTimer;
@@ -258,6 +324,7 @@ function initGame() {
   bullets   = [];
   asteroids = [];
   particles = [];
+  powerUps  = [];
   score  = 0;
   lives  = 3;
   level  = 1;
@@ -269,6 +336,7 @@ function nextLevel() {
   level++;
   bullets   = [];
   particles = [];
+  powerUps  = [];
   ship.reset();
   spawnAsteroids(3 + level);
 }
@@ -280,6 +348,7 @@ function explode(x, y, count = 8) {
 function killShip() {
   explode(ship.x, ship.y, 14);
   ship.dead = true;
+  ship.powerTimer = 0;   // morir cancela el disparo triple
   lives--;
   if (lives <= 0) {
     state = 'gameover';
@@ -303,6 +372,8 @@ function update(dt) {
     particles.forEach(p => p.update(dt));
     particles = particles.filter(p => !p.dead);
     asteroids.forEach(a => a.update(dt));
+    powerUps.forEach(p => p.update(dt));
+    powerUps = powerUps.filter(p => !p.dead);
     if (deadTimer <= 0) { state = 'playing'; ship.reset(); }
     return;
   }
@@ -316,9 +387,11 @@ function update(dt) {
   bullets.forEach(b => b.update(dt));
   asteroids.forEach(a => a.update(dt));
   particles.forEach(p => p.update(dt));
+  powerUps.forEach(p => p.update(dt));
 
   bullets   = bullets.filter(b => !b.dead);
   particles = particles.filter(p => !p.dead);
+  powerUps  = powerUps.filter(p => !p.dead);
 
   // Bala vs asteroide
   const newAsteroids = [];
@@ -330,11 +403,22 @@ function update(dt) {
         score += POINTS[a.size];
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
+        // Posibilidad de soltar power-up de disparo triple
+        if (Math.random() < POWERUP_CHANCE) powerUps.push(new PowerUp(a.x, a.y));
       }
     }
   }
   asteroids = asteroids.filter(a => !a.dead).concat(newAsteroids);
   bullets   = bullets.filter(b => !b.dead);
+
+  // Nave vs power-up: recogerlo activa (o reinicia) el disparo triple
+  for (const p of powerUps) {
+    if (dist(ship, p) < ship.radius + p.radius) {
+      p.dead = true;
+      ship.powerTimer = POWER_DURATION;
+    }
+  }
+  powerUps = powerUps.filter(p => !p.dead);
 
   // Nave vs asteroide
   if (ship.invincible <= 0) {
@@ -381,6 +465,12 @@ function drawHUD() {
   for (let i = 0; i < lives; i++)
     drawLifeIcon(W - 16 - i * 22, 18);
 
+  // Indicador del tiempo restante del disparo triple
+  if (ship.powerTimer > 0) {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = POWER_COLOR;
+    ctx.fillText(`TRIPLE ${ship.powerTimer.toFixed(1)}s`, 14, 46);
+  }
 }
 
 function drawOverlay(title, sub) {
@@ -399,6 +489,7 @@ function draw() {
 
   particles.forEach(p => p.draw());
   asteroids.forEach(a => a.draw());
+  powerUps.forEach(p => p.draw());
   bullets.forEach(b => b.draw());
   ship.draw();
 

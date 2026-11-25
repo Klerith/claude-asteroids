@@ -61,6 +61,7 @@ class Bullet {
 const RADII  = [0, 16, 30, 50];   // por tamaño 1, 2, 3
 const SPEEDS = [0, 85, 55, 32];   // velocidad base por tamaño
 const POINTS = [0, 100, 50, 20];  // puntos por tamaño
+const COLORS = [null, '#ffdd00', '#3399ff', '#ff3333']; // color por tamaño: 1 amarillo, 2 azul, 3 rojo
 
 class Asteroid {
   constructor(x, y, size = 3) {
@@ -105,7 +106,7 @@ class Asteroid {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = COLORS[this.size];
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
     ctx.beginPath();

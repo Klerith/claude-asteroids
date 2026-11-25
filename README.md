@@ -11,11 +11,11 @@ Clon del clásico arcade **Asteroids** implementado en canvas HTML5 puro, sin de
 Nave espacial en un campo de asteroides con envolvimiento de bordes (el espacio es toroidal). Destruye asteroides para sumar puntos: los grandes se parten en medianos, los medianos en pequeños. Incluye power-ups especiales y tipos de asteroides únicos como la estrella fugaz...
 
 ## Tecnologías
-
+|
 - **HTML5 Canvas** — renderizado 2D
 - **JavaScript (ES6+)** — lógica del juego en un solo archivo `game.js`
 - Sin frameworks, sin bundler, sin dependencias
-
+|
 ## Cómo correr
 
 Abre `index.html` directamente en el navegador (doble clic), o usa un servidor local:
